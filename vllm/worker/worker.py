@@ -62,7 +62,7 @@ class Worker:
         _init_distributed_environment(self.parallel_config, self.rank,
                                       self.distributed_init_method)
 
-        # Initialize the model.
+        # 🔴 Initialize the model.
         set_random_seed(self.model_config.seed)
         self.model = get_model(self.model_config)
 
@@ -288,8 +288,11 @@ class Worker:
         # Prepare input tensors.
         input_tokens, input_positions, input_metadata = self._prepare_inputs(
             seq_group_metadata_list)
-
-        # Execute the model.
+        
+        
+        # expose this method outside vllm
+        self.model.get_input_embeddings()
+        # 🔴 Execute the model.
         output = self.model(
             input_ids=input_tokens,
             positions=input_positions,

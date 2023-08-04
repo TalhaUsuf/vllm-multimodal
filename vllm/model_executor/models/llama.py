@@ -210,6 +210,8 @@ class LlamaModel(nn.Module):
         input_metadata: InputMetadata,
         cache_events: Optional[List[torch.cuda.Event]],
     ) -> torch.Tensor:
+        
+        # get the [N, T, D] tensor of embeddings
         hidden_states = self.embed_tokens(input_ids)
         for i in range(len(self.layers)):
             if cache_events is None:
@@ -228,6 +230,11 @@ class LlamaModel(nn.Module):
         return hidden_states
 
 
+
+
+
+
+
 class LlamaForCausalLM(nn.Module):
 
     def __init__(self, config):
@@ -242,6 +249,66 @@ class LlamaForCausalLM(nn.Module):
                                             perform_initialization=False)
         self.sampler = Sampler(config.vocab_size)
 
+
+    # lavis functions ported
+
+    def get_input_embeddings(self):
+        return self.model.embed_tokens
+    
+    def set_input_embeddings(self, value):
+        self.model.embed_tokens = value
+    
+    def get_output_embeddings(self):
+        return self.lm_head
+
+    def set_output_embeddings(self, new_embeddings):
+        self.lm_head = new_embeddings
+    
+    def set_decoder(self, decoder):
+        self.model = decoder
+
+    def get_decoder(self):
+        return self.model
+    
+    
+    # Original function from the Lavis
+    
+    # def forward(
+    #     self,
+    #     input_ids: torch.LongTensor = None,
+    #     attention_mask: Optional[torch.Tensor] = None,
+    #     position_ids: Optional[torch.LongTensor] = None,
+    #     past_key_values: Optional[List[torch.FloatTensor]] = None,
+    #     inputs_embeds: Optional[torch.FloatTensor] = None,
+    #     labels: Optional[torch.LongTensor] = None,
+    #     use_cache: Optional[bool] = None,
+    #     output_attentions: Optional[bool] = None,
+    #     output_hidden_states: Optional[bool] = None,
+    #     return_dict: Optional[bool] = None,
+    #     reduction: Optional[str] = "mean",
+    # ) -> Union[Tuple, CausalLMOutputWithPast]:
+    
+    # Original function from the VLLM
+    # def forward(
+        #     self,
+        #     input_ids: torch.Tensor,
+        # -    attention_mask: Optional[torch.Tensor] = None,
+        # -    position_ids: Optional[torch.LongTensor] = None,
+        # -    past_key_values: Optional[List[torch.FloatTensor]] = None,
+        # -    inputs_embeds: Optional[torch.FloatTensor] = None,
+        # -    labels: Optional[torch.LongTensor] = None,
+        # -    use_cache: Optional[bool] = None,
+        # -    output_attentions: Optional[bool] = None,
+        # -    output_hidden_states: Optional[bool] = None,
+        # -    return_dict: Optional[bool] = None,
+        # -) -> Union[Tuple, CausalLMOutputWithPast]:
+        # +    positions: torch.Tensor,
+        # +    kv_caches: List[KVCache],
+        # +    input_metadata: InputMetadata,
+        # +    cache_events: Optional[List[torch.cuda.Event]],
+        # +) -> Dict[int, SequenceOutputs]:
+    
+    
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -250,6 +317,8 @@ class LlamaForCausalLM(nn.Module):
         input_metadata: InputMetadata,
         cache_events: Optional[List[torch.cuda.Event]],
     ) -> Dict[int, SequenceOutputs]:
+        
+        
         hidden_states = self.model(input_ids, positions, kv_caches,
                                    input_metadata, cache_events)
         next_tokens = self.sampler(self.lm_head.weight, hidden_states,

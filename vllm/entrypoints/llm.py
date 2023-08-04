@@ -75,7 +75,7 @@ class LLM:
         tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
     ) -> None:
         self.llm_engine.tokenizer = tokenizer
-
+    # 🔴 
     def generate(
         self,
         prompts: Optional[Union[str, List[str]]] = None,
@@ -120,6 +120,7 @@ class LLM:
             num_requests = len(prompts)
         else:
             num_requests = len(prompt_token_ids)
+            
         for i in range(num_requests):
             prompt = prompts[i] if prompts is not None else None
             if prompt_token_ids is None:

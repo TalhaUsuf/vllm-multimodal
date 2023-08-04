@@ -50,6 +50,7 @@ for i in range(device_count):
 # If no GPU is available, add all supported compute capabilities.
 if not compute_capabilities:
     compute_capabilities = {70, 75, 80, 86, 90}
+    # compute_capabilities = {90}
 # Add target compute capabilities to NVCC flags.
 for capability in compute_capabilities:
     NVCC_FLAGS += ["-gencode", f"arch=compute_{capability},code=sm_{capability}"]

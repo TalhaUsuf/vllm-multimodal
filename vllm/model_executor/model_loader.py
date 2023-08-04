@@ -36,7 +36,7 @@ def _get_model_architecture(config: PretrainedConfig) -> Type[nn.Module]:
         f"Model architectures {architectures} are not supported for now. "
         f"Supported architectures: {list(_MODEL_REGISTRY.keys())}")
 
-
+# 🔴
 def get_model(model_config: ModelConfig) -> nn.Module:
     model_class = _get_model_architecture(model_config.hf_config)
     torch.set_default_dtype(model_config.dtype)
