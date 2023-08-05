@@ -43,7 +43,7 @@ from vllm.model_executor.parallel_utils.parallel_state import (
 from vllm.model_executor.parallel_utils.tensor_parallel import (
     VocabParallelEmbedding, ColumnParallelLinear, RowParallelLinear)
 from vllm.sequence import SequenceOutputs
-
+from rich.console import Console
 KVCache = Tuple[torch.Tensor, torch.Tensor]
 
 
@@ -209,10 +209,27 @@ class LlamaModel(nn.Module):
         kv_caches: List[KVCache],
         input_metadata: InputMetadata,
         cache_events: Optional[List[torch.cuda.Event]],
+        input_embeddings: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         
         # get the [N, T, D] tensor of embeddings
-        hidden_states = self.embed_tokens(input_ids)
+        
+        # if both input_ids and input_embeddings are None, raise an error
+        if input_ids is None and input_embeddings is None:
+            raise ValueError("Either input_ids or input_embeddings must be ")
+        # if both input_ids and input_embeddings are given, raise an error
+        if input_ids is not None and input_embeddings is not None:
+            raise ValueError("Only one of input_ids or input_embeddings must be given, not both. Either pass input_ids or give input_embeddings from outside (useful for multimodal)")
+        
+        if input_embeddings is None:
+            Console().print(f"[green]using the [red]input_ids [green] to get the embeddings")
+            hidden_states = self.embed_tokens(input_ids)
+            Console().print(f"[green]hidden_states.shape: [red]{hidden_states.shape}")
+        else:
+            Console().print(f"[green]using the [red]input_embeddings [green] from outside")
+            hidden_states = input_embeddings
+            Console().print(f"[green]input_embeddings.shape: [red]{hidden_states.shape}")
+                
         for i in range(len(self.layers)):
             if cache_events is None:
                 cache_event = None
@@ -227,6 +244,7 @@ class LlamaModel(nn.Module):
                 cache_event,
             )
         hidden_states = self.norm(hidden_states)
+        Console().print(f"[green]FINAL hidden_states.shape: [red]{hidden_states.shape}")
         return hidden_states
 
 
@@ -316,11 +334,12 @@ class LlamaForCausalLM(nn.Module):
         kv_caches: List[KVCache],
         input_metadata: InputMetadata,
         cache_events: Optional[List[torch.cuda.Event]],
+        input_embeddings: Optional[torch.Tensor] = None,
     ) -> Dict[int, SequenceOutputs]:
         
-        
+        # input_embeddings argument added.
         hidden_states = self.model(input_ids, positions, kv_caches,
-                                   input_metadata, cache_events)
+                                   input_metadata, cache_events, input_embeddings=input_embeddings)
         next_tokens = self.sampler(self.lm_head.weight, hidden_states,
                                    input_metadata)
         return next_tokens

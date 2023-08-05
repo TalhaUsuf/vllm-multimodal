@@ -7,6 +7,7 @@ from vllm.config import (CacheConfig, ModelConfig, ParallelConfig,
                          SchedulerConfig)
 from vllm.core.scheduler import Scheduler
 from vllm.engine.arg_utils import EngineArgs
+from rich.console import Console
 from vllm.engine.ray_utils import initialize_cluster, ray, RayWorker
 from vllm.logger import init_logger
 from vllm.outputs import RequestOutput
@@ -469,7 +470,7 @@ class LLMEngine:
 
             output = executor(*args, **kwargs)
             all_outputs.append(output)
-
+        Console().print(f"[green]All outputs are : [red]{all_outputs}")
         if self.parallel_config.worker_use_ray:
             all_outputs = ray.get(all_outputs)
 
